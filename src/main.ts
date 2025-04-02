@@ -123,7 +123,7 @@ export default class IACPlugin extends Plugin {
 
 	public onunload() {
 		if(this.settings.watchObsidianSync)	this.syncChecker.handleUnload()
-		console.log("Cron unloaded")
+		// console.log("Inactivity Commands unloaded")
 	}
 
 	public loadJobs() {

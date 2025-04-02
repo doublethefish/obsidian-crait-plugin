@@ -53,6 +53,7 @@ export default class Job {
 
 	/** Resets the timout for this job. */
 	public resetTimeout() {
+		// console.log(`Resetting timeout ${this.name}`);
 		this.clearTimeout();
 		// Set inactivity period.
 		const hours:number = this.frequency.hours || 0;
@@ -60,9 +61,10 @@ export default class Job {
 		const secs:number = this.frequency.secs || 0;
 		const timerMs:number = (hours * 60 * 60 *1000) + (mins * 60 * 1000) + (secs * 1000);
 		if (timerMs < 1) {
-			console.log(`Timout is too small: ${this.id}: ${timerMs}`)
+			// console.log(`Timout is too small: ${this.id}: ${timerMs}`)
 			return;
 		}
+		// console.log(`setting timeout for ${this.name} to ${timerMs}ms`);
 		this.timeoutId = window.setTimeout(async () => {
 			await this.runJob();
 		}, timerMs);
@@ -111,6 +113,7 @@ export default class Job {
 	}
 
 	private async runJobCommand(): Promise<void> {
+		// console.log(`running: ${this.job}`)
 		if(typeof this.job !== 'string') { return }
 
 		const jobCommand = this.app.commands.commands[this.job];
