@@ -1,5 +1,5 @@
-import { CronJobSettings } from './job';
-import Cron from './main';
+import { JobSettings } from './job';
+import IACPlugin from './main';
 import SyncChecker from './syncChecker';
 
 export interface CronLock {
@@ -11,11 +11,11 @@ export interface CronLock {
 
 export default class CronLockManager {
 	syncChecker: SyncChecker;
-	plugin: Cron
+	plugin: IACPlugin
 	job: string
-	settings: CronJobSettings
+	settings: JobSettings
 
-	public constructor(job: string, jobSettings: CronJobSettings, plugin: Cron, syncChecker: SyncChecker) {
+	public constructor(job: string, jobSettings: JobSettings, plugin: IACPlugin, syncChecker: SyncChecker) {
 		this.syncChecker = syncChecker;
 		this.job = job;
 		this.settings = jobSettings;

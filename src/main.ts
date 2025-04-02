@@ -1,41 +1,45 @@
 import { Plugin } from 'obsidian';
-import Job, { CronJobFunc, CronJobSettings } from './job';
+import Job, { JobFrequency, JobFunc, JobSettings } from './job';
 import { CronLock } from './lockManager';
 import CronLockManager from './lockManager';
 import CronSettingTab from './settings';
 import SyncChecker from './syncChecker';
 import CronAPI from './api';
 
-export interface CronSettings {
+export interface IACSettings {
 	cronInterval: number;
 	runOnStartup: boolean
 	enableMobile: boolean
 	watchObsidianSync: boolean
-	crons: Array<CRONJob>,
+	jobs: Array<IACJob>,
 	locks: { [key: string]: CronLock }
 }
 
-export interface CRONJob {
+export interface IACJob {
 	id: string
 	name: string
 	job: string
-	frequency: string
-	settings: CronJobSettings
+	frequency: {
+		hours?: number
+		mins?: number
+		secs?: number
+	}
+	settings: JobSettings
 }
 
-const DEFAULT_SETTINGS: CronSettings = {
+const DEFAULT_SETTINGS: IACSettings = {
 	cronInterval: 15,
 	runOnStartup: true,
 	enableMobile: true,
 	watchObsidianSync: true,
-	crons: [],
+	jobs: [],
 	locks: {}
 }
 
-export default class Cron extends Plugin {
-	static instance: Cron
+export default class IACPlugin extends Plugin {
+	static instance: IACPlugin
 	interval: number;
-	settings: CronSettings;
+	settings: IACSettings;
 	syncChecker: SyncChecker
 	lockManager: CronLockManager
 	jobs: { [key: string]: Job }
@@ -43,7 +47,7 @@ export default class Cron extends Plugin {
 
 	async onload() {
 		console.log("Loading Obsidian CRON!");
-		Cron.instance = this;
+		IACPlugin.instance = this;
 		await this.loadSettings();
 
 		this.addSettingTab(new CronSettingTab(this.app, this));
@@ -80,9 +84,9 @@ export default class Cron extends Plugin {
 		}
 	}
 
-	public addCronJob(name: string, frequency: string, settings: CronJobSettings, job: CronJobFunc) {
+	public addJob(name: string, frequency: JobFrequency, settings: JobSettings, job: JobFunc) {
 		const existingJob = this.getJob(name)
-		if(existingJob) throw new Error("CRON Job already exists")
+		if(existingJob) throw new Error("Inactivity Commands Job already exists")
 
 		this.jobs[name] = new Job(name, name, job, frequency, settings, this.app, this, this.syncChecker)
 	}
@@ -112,7 +116,7 @@ export default class Cron extends Plugin {
 	}
 
 	public loadCrons() {
-		this.settings.crons.forEach(cronjob => {
+		this.settings.jobs.forEach(cronjob => {
 			if(cronjob.frequency === "" || cronjob.job === "") {
 				return;
 			}

@@ -1,12 +1,18 @@
 import { App } from 'obsidian';
 import CronLockManager from './lockManager';
-import Cron from './main';
+import IACPlugin from './main';
 import SyncChecker from './syncChecker';
 import { parseExpression } from 'cron-parser';
 
-export interface CronJobFunc {(app:App): Promise<void> | void}
+export interface JobFunc {(app:App): Promise<void> | void}
 
-export interface CronJobSettings {
+export interface JobFrequency {
+	hours?: number,
+	mins?: number,
+	secs?: number,
+}
+
+export interface JobSettings {
 	enableMobile?: boolean
 	disableSyncCheck?: boolean
 	disableJobLock?: boolean
@@ -14,18 +20,18 @@ export interface CronJobSettings {
 
 export default class Job {
 	syncChecker: SyncChecker;
-	plugin: Cron
+	plugin: IACPlugin
 	app: App;
 
 	lockManager: CronLockManager;
-	frequency: string
-	settings: CronJobSettings
-	job: CronJobFunc | string
+	settings: JobSettings
+	job: JobFunc | string
 	name: string
 	id: string
 	noRunReason: string
+	frequency: JobFrequency
 
-	public constructor(id: string, name: string, job: CronJobFunc | string, frequency: string, settings: CronJobSettings, app: App, plugin: Cron, syncChecker: SyncChecker) {
+	public constructor(id: string, name: string, job: JobFunc | string, frequency: JobFrequency, settings: JobSettings, app: App, plugin: IACPlugin, syncChecker: SyncChecker) {
 		this.syncChecker = syncChecker;
 		this.plugin = plugin;
 		this.app = app;
@@ -79,8 +85,10 @@ export default class Job {
 		const lastRun = this.lockManager.lastRun()
 		if(!lastRun) return true
 
-		const prevRun = window.moment(parseExpression(this.frequency).prev().toDate())
-		return prevRun.isAfter(lastRun)
+		// FIXME: define the intended outcome here better.
+		// const prevRun = window.moment(parseExpression(this.frequency).prev().toDate())
+		// return prevRun.isAfter(lastRun)
+		return false
 	}
 
 	private async runJobFunction(): Promise<void> {

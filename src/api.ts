@@ -1,14 +1,14 @@
-import { CronJobFunc, CronJobSettings } from "./job"
-import Cron from "./main"
+import { JobFrequency, JobFunc, JobSettings } from "./job"
+import IACPlugin from "./main"
 
 
 export default class CronAPI {
 	static instance: CronAPI
 
-	public static get(plugin: Cron) {
+	public static get(plugin: IACPlugin) {
 		return {
-			addCronJob(name: string, frequency: string, settings: CronJobSettings, job: CronJobFunc) {
-				return plugin.addCronJob(name, frequency, settings, job)
+			addJob(name: string, frequency: JobFrequency, settings: JobSettings, job: JobFunc) {
+				return plugin.addJob(name, frequency, settings, job)
 			},
 			runJob(name: string) {
 				return plugin.runJob(name)

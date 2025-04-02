@@ -1,6 +1,6 @@
 import { App } from 'obsidian';
-import { CronJobSettings } from './job';
-import Cron from './main';
+import { JobSettings } from './job';
+import IACPlugin from './main';
 
 const syncEmitterName = 'status-change';
 const syncCompletedStatus = 'synced';
@@ -14,10 +14,10 @@ type promiseEntry = {
 export default class SyncChecker {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	syncInstance: any
-	plugin: Cron
+	plugin: IACPlugin
 	syncWaiters: Array<promiseEntry>
 
-	public constructor(app: App, plugin: Cron) {
+	public constructor(app: App, plugin: IACPlugin) {
 		this.syncInstance = app.internalPlugins.plugins['sync'].instance;
 		this.plugin = plugin;
 		this.syncWaiters = [];
@@ -53,7 +53,7 @@ export default class SyncChecker {
 		})
 	}
 
-	public waitForSync(settings: CronJobSettings): Promise<void> {
+	public waitForSync(settings: JobSettings): Promise<void> {
 		return new Promise((resolve, reject) => {
 			if(settings.disableSyncCheck) resolve();
 			if(!this.plugin.settings.watchObsidianSync) resolve();
