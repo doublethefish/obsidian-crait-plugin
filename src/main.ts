@@ -29,7 +29,7 @@ export interface IACJob {
 const DEFAULT_SETTINGS: IACSettings = {
 	runOnStartup: true,
 	enableMobile: true,
-	watchObsidianSync: true,
+	watchObsidianSync: false,
 	jobs: [],
 	locks: {}
 }
