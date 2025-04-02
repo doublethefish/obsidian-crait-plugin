@@ -7,11 +7,30 @@ If your plugin does not need CSS, delete this file.
 
 */
 
-.cron-plugin-text-input {
+/* Container for each job row */
+.job-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.inactivity-commands-text-input {
 	width: 10vw;
 	min-width: 180px;
 }
 
-.cron-plugin-job {
+.inactivity-commands-plugin-job {
 	flex-wrap: wrap;
+}
+
+/* Command input: take more space */
+.inactivity-commands-job-command {
+  flex: 2;
+  min-width: 250px;
+}
+
+/* Time inputs (hours, mins): fixed width */
+.inactivity-commands-job-time {
+  flex: 0 0 50px;
 }

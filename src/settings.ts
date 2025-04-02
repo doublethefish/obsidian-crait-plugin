@@ -100,7 +100,7 @@ export default class CronSettingTab extends PluginSettingTab {
 							await this.plugin.saveSettings();
 							this.plugin.loadJobs();
 						})
-						.inputEl.addClass('inactivity-commands-plugin-text-input')
+						.inputEl.addClass('inactivity-commands-job-command')
 				})
 				.addText(text => text
 					.setPlaceholder("hours")
@@ -110,7 +110,7 @@ export default class CronSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 						this.plugin.loadJobs();
 					})
-					.inputEl.addClass('inactivity-commands-plugin-text-input')
+					.inputEl.addClass('inactivity-commands-job-time')
 				)
 				.addText(text => text
 					.setPlaceholder("mins")
@@ -120,7 +120,7 @@ export default class CronSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 						this.plugin.loadJobs();
 					})
-					.inputEl.addClass('inactivity-commands-plugin-text-input')
+					.inputEl.addClass('inactivity-commands-job-time')
 				)
 				// .addText(text => text
 				// 	.setPlaceholder("secs")
