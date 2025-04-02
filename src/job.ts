@@ -30,6 +30,7 @@ export default class Job {
 	id: string
 	noRunReason: string
 	frequency: JobFrequency
+	timeoutId: number
 
 	public constructor(id: string, name: string, job: JobFunc | string, frequency: JobFrequency, settings: JobSettings, app: App, plugin: IACPlugin, syncChecker: SyncChecker) {
 		this.syncChecker = syncChecker;
@@ -43,6 +44,28 @@ export default class Job {
 		this.frequency = frequency;
 		this.settings = settings;
 
+	}
+
+	/** Removes the timer for this job **/
+	public clearTimeout() {
+		clearTimeout(this.timeoutId);
+	}
+
+	/** Resets the timout for this job. */
+	public resetTimeout() {
+		this.clearTimeout();
+		// Set inactivity period.
+		const hours:number = this.frequency.hours || 0;
+		const mins:number = this.frequency.mins || 0;
+		const secs:number = this.frequency.secs || 0;
+		const timerMs:number = (hours * 60 * 60 *1000) + (mins * 60 * 1000) + (secs * 1000);
+		if (timerMs < 1) {
+			console.log(`Timout is too small: ${this.id}: ${timerMs}`)
+			return;
+		}
+		this.timeoutId = window.setTimeout(async () => {
+			await this.runJob();
+		}, timerMs);
 	}
 
 	public async runJob(): Promise<void> {
@@ -68,27 +91,11 @@ export default class Job {
 			return false
 		}
 
-		if(!this.jobIntervalPassed()) {
-			this.noRunReason = "job interval hasnt passed"
-			return false
-		}
-
 		return true
 	}
 
 	public clearJobLock(): void {
 		this.lockManager.clearLock()
-	}
-
-	private jobIntervalPassed(): boolean {
-		// job never ran
-		const lastRun = this.lockManager.lastRun()
-		if(!lastRun) return true
-
-		// FIXME: define the intended outcome here better.
-		// const prevRun = window.moment(parseExpression(this.frequency).prev().toDate())
-		// return prevRun.isAfter(lastRun)
-		return false
 	}
 
 	private async runJobFunction(): Promise<void> {

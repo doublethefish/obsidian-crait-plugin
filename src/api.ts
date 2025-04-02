@@ -2,8 +2,8 @@ import { JobFrequency, JobFunc, JobSettings } from "./job"
 import IACPlugin from "./main"
 
 
-export default class CronAPI {
-	static instance: CronAPI
+export default class InactivityCommandsAPI {
+	static instance: InactivityCommandsAPI
 
 	public static get(plugin: IACPlugin) {
 		return {

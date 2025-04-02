@@ -17,18 +17,18 @@ export default class CronSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.createEl('h2', { text: 'Settings for Cron.' });
 
-		new Setting(containerEl)
-			.setName('Cron Interval')
-			.setDesc('The interval the cron will run in minutes')
-			.addText(text => text
-				.setValue(this.plugin.settings.cronInterval.toString())
-				.onChange(async (value) => {
-					if (value == "") { return }
-					this.plugin.settings.cronInterval = parseInt(value);
-					await this.plugin.saveSettings();
-					this.plugin.loadInterval();
-				})
-			);
+		// new Setting(containerEl)
+		// 	.setName('Cron Interval')
+		// 	.setDesc('The interval the cron will run in minutes')
+		// 	.addText(text => text
+		// 		.setValue(this.plugin.settings.cronInterval.toString())
+		// 		.onChange(async (value) => {
+		// 			if (value == "") { return }
+		// 			this.plugin.settings.cronInterval = parseInt(value);
+		// 			await this.plugin.saveSettings();
+		// 			this.plugin.loadInterval();
+		// 		})
+		// 	);
 
 		new Setting(containerEl)
 			.setName('Run cron on startup')
@@ -92,7 +92,7 @@ export default class CronSettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.jobs[index].name = value;
 						await this.plugin.saveSettings();
-						this.plugin.loadCrons();
+						this.plugin.loadJobs();
 					})
 					.inputEl.addClass('cron-plugin-text-input')
 				)
@@ -105,7 +105,7 @@ export default class CronSettingTab extends PluginSettingTab {
 
 							this.plugin.settings.jobs[index].job = command;
 							await this.plugin.saveSettings();
-							this.plugin.loadCrons();
+							this.plugin.loadJobs();
 						})
 						.inputEl.addClass('cron-plugin-text-input')
 				})
@@ -115,7 +115,7 @@ export default class CronSettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.jobs[index].frequency.hours = Number(value);
 						await this.plugin.saveSettings();
-						this.plugin.loadCrons();
+						this.plugin.loadJobs();
 					})
 					.inputEl.addClass('cron-plugin-text-input')
 				)
@@ -125,7 +125,7 @@ export default class CronSettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.jobs[index].frequency.mins = Number(value);
 						await this.plugin.saveSettings();
-						this.plugin.loadCrons();
+						this.plugin.loadJobs();
 					})
 					.inputEl.addClass('cron-plugin-text-input')
 				)
@@ -135,7 +135,7 @@ export default class CronSettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.jobs[index].frequency.secs = Number(value);
 						await this.plugin.saveSettings();
-						this.plugin.loadCrons();
+						this.plugin.loadJobs();
 					})
 					.inputEl.addClass('cron-plugin-text-input')
 				)
