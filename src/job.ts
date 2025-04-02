@@ -2,7 +2,6 @@ import { App } from 'obsidian';
 import CronLockManager from './lockManager';
 import IACPlugin from './main';
 import SyncChecker from './syncChecker';
-import { parseExpression } from 'cron-parser';
 
 export interface JobFunc {(app:App): Promise<void> | void}
 
