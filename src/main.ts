@@ -166,5 +166,6 @@ export default class IACPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+		this.resetTimeout()
 	}
 }
