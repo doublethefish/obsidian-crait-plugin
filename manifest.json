@@ -1,10 +1,10 @@
 {
-	"id": "cron",
-	"name": "Cron",
-	"version": "1.1.2",
+	"id": "inactivity-commands",
+	"name": "Inactivity Commands",
+	"version": "0.0.1",
 	"minAppVersion": "0.15.0",
-	"description": "Simple CRON / schedular plugin to regularly run user scripts or Obsidian commands.",
-	"author": "Callum Loh",
-	"authorUrl": "https://github.com/cdloh",
+	"description": "Simple plugin to run commands and user scripts after a period of inactivity.",
+	"author": "Frank Allan Harrison",
+	"authorUrl": "https://frankallanharrison.com",
 	"isDesktopOnly": false
 }

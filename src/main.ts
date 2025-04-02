@@ -1,49 +1,51 @@
 import { Plugin } from 'obsidian';
-import Job, { CronJobFunc, CronJobSettings } from './job';
+import Job, { JobFrequency, JobFunc, JobSettings } from './job';
 import { CronLock } from './lockManager';
 import CronLockManager from './lockManager';
 import CronSettingTab from './settings';
 import SyncChecker from './syncChecker';
-import CronAPI from './api';
+import InactivityCommandsAPI from './api';
 
-export interface CronSettings {
-	cronInterval: number;
+export interface IACSettings {
 	runOnStartup: boolean
 	enableMobile: boolean
 	watchObsidianSync: boolean
-	crons: Array<CRONJob>,
+	jobs: Array<IACJob>,
 	locks: { [key: string]: CronLock }
 }
 
-export interface CRONJob {
+export interface IACJob {
 	id: string
 	name: string
 	job: string
-	frequency: string
-	settings: CronJobSettings
+	frequency: {
+		hours?: number
+		mins?: number
+		secs?: number
+	}
+	settings: JobSettings
 }
 
-const DEFAULT_SETTINGS: CronSettings = {
-	cronInterval: 15,
+const DEFAULT_SETTINGS: IACSettings = {
 	runOnStartup: true,
 	enableMobile: true,
-	watchObsidianSync: true,
-	crons: [],
+	watchObsidianSync: false,
+	jobs: [],
 	locks: {}
 }
 
-export default class Cron extends Plugin {
-	static instance: Cron
-	interval: number;
-	settings: CronSettings;
+export default class IACPlugin extends Plugin {
+	static instance: IACPlugin
+	settings: IACSettings;
 	syncChecker: SyncChecker
 	lockManager: CronLockManager
 	jobs: { [key: string]: Job }
-	api: CronAPI
+	api: InactivityCommandsAPI
 
+	/** Called when the plugin is loaded. */
 	async onload() {
-		console.log("Loading Obsidian CRON!");
-		Cron.instance = this;
+		console.log("Loading Obsidian Inactivity Commands!");
+		IACPlugin.instance = this;
 		await this.loadSettings();
 
 		this.addSettingTab(new CronSettingTab(this.app, this));
@@ -52,18 +54,24 @@ export default class Cron extends Plugin {
 		this.jobs = {}
 
 		// load our cronjobs
-		this.loadCrons()
-		this.loadInterval()
-		this.api = CronAPI.get(this)
+		this.loadJobs()
+		this.api = InactivityCommandsAPI.get(this)
 		this.app.workspace.onLayoutReady(() => {
 			if(this.settings.runOnStartup) {
-				if(this.app.isMobile && !this.settings.enableMobile) { return }
-				this.runCron()
+				if(this.app.isMobile && !this.settings.enableMobile)
+				{ 
+					return
+				}
+				this.runJobs()
 			}
 		})
+
+		// Configure the timeouts
+		this.resetTimeout();
+		this.initInactivity();
 	}
 
-	public async runCron() {
+	public async runJobs() {
 		// console.log("Running Obsidian Cron!")
 		for (const [, job] of Object.entries(this.jobs)) {
 			await this.syncChecker.waitForSync(job.settings)
@@ -79,10 +87,17 @@ export default class Cron extends Plugin {
 			await job.runJob()
 		}
 	}
+	
+	public initInactivity() {
+		// Listen to common user interactions to reset the timer.
+		this.registerDomEvent(window, 'mousemove', () => this.resetTimeout());
+		this.registerDomEvent(window, 'keydown', () => this.resetTimeout());
+		this.registerDomEvent(window, 'mousedown', () => this.resetTimeout());
+	}
 
-	public addCronJob(name: string, frequency: string, settings: CronJobSettings, job: CronJobFunc) {
+	public addJob(name: string, frequency: JobFrequency, settings: JobSettings, job: JobFunc) {
 		const existingJob = this.getJob(name)
-		if(existingJob) throw new Error("CRON Job already exists")
+		if(existingJob) throw new Error("Inactivity Commands Job already exists")
 
 		this.jobs[name] = new Job(name, name, job, frequency, settings, this.app, this, this.syncChecker)
 	}
@@ -108,24 +123,41 @@ export default class Cron extends Plugin {
 
 	public onunload() {
 		if(this.settings.watchObsidianSync)	this.syncChecker.handleUnload()
-		console.log("Cron unloaded")
+		// console.log("Inactivity Commands unloaded")
 	}
 
-	public loadCrons() {
-		this.settings.crons.forEach(cronjob => {
-			if(cronjob.frequency === "" || cronjob.job === "") {
+	public loadJobs() {
+		this.settings.jobs.forEach(iacJob => {
+			if (iacJob.job === "") {
+				// empty job, nothing to do.
 				return;
 			}
 
-			this.jobs[cronjob.id] = new Job(cronjob.id, cronjob.name, cronjob.job, cronjob.frequency, cronjob.settings, this.app, this, this.syncChecker)
+			if((iacJob.frequency.hours === undefined) && (iacJob.frequency.mins === undefined) && (iacJob.frequency.secs === undefined)) {
+				// no timeout config set
+				return;
+			}
+
+			this.jobs[iacJob.id] = new Job(iacJob.id, iacJob.name, iacJob.job, iacJob.frequency, iacJob.settings, this.app, this, this.syncChecker)
 		});
 	}
 
-	public loadInterval() {
-		clearInterval(this.interval)
-		if(this.app.isMobile && !this.settings.enableMobile) { return }
-		this.interval = window.setInterval(async () => { await this.runCron()	}, this.settings.cronInterval * 60 * 1000)
-		this.registerInterval(this.interval)
+	private clearTimeout() {
+		for (const [, job] of Object.entries(this.jobs)) {
+			job.clearTimeout()
+		}
+	}
+
+	/** Resets the inactivity timer. */
+	private resetTimeout() {
+		this.clearTimeout();
+		if(this.app.isMobile && !this.settings.enableMobile) {
+			// we're disabled on mobile, do nothing.
+			return;
+		}
+		for (const [, job] of Object.entries(this.jobs)) {
+			job.resetTimeout()
+		}
 	}
 
 	async loadSettings() {
@@ -134,5 +166,6 @@ export default class Cron extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+		this.resetTimeout()
 	}
 }

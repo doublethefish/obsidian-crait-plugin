@@ -1,12 +1,18 @@
 import { App } from 'obsidian';
 import CronLockManager from './lockManager';
-import Cron from './main';
+import IACPlugin from './main';
 import SyncChecker from './syncChecker';
 import { parseExpression } from 'cron-parser';
 
-export interface CronJobFunc {(app:App): Promise<void> | void}
+export interface JobFunc {(app:App): Promise<void> | void}
 
-export interface CronJobSettings {
+export interface JobFrequency {
+	hours?: number,
+	mins?: number,
+	secs?: number,
+}
+
+export interface JobSettings {
 	enableMobile?: boolean
 	disableSyncCheck?: boolean
 	disableJobLock?: boolean
@@ -14,18 +20,19 @@ export interface CronJobSettings {
 
 export default class Job {
 	syncChecker: SyncChecker;
-	plugin: Cron
+	plugin: IACPlugin
 	app: App;
 
 	lockManager: CronLockManager;
-	frequency: string
-	settings: CronJobSettings
-	job: CronJobFunc | string
+	settings: JobSettings
+	job: JobFunc | string
 	name: string
 	id: string
 	noRunReason: string
+	frequency: JobFrequency
+	timeoutId: number
 
-	public constructor(id: string, name: string, job: CronJobFunc | string, frequency: string, settings: CronJobSettings, app: App, plugin: Cron, syncChecker: SyncChecker) {
+	public constructor(id: string, name: string, job: JobFunc | string, frequency: JobFrequency, settings: JobSettings, app: App, plugin: IACPlugin, syncChecker: SyncChecker) {
 		this.syncChecker = syncChecker;
 		this.plugin = plugin;
 		this.app = app;
@@ -37,6 +44,30 @@ export default class Job {
 		this.frequency = frequency;
 		this.settings = settings;
 
+	}
+
+	/** Removes the timer for this job **/
+	public clearTimeout() {
+		clearTimeout(this.timeoutId);
+	}
+
+	/** Resets the timout for this job. */
+	public resetTimeout() {
+		// console.log(`Resetting timeout ${this.name}`);
+		this.clearTimeout();
+		// Set inactivity period.
+		const hours:number = this.frequency.hours || 0;
+		const mins:number = this.frequency.mins || 0;
+		const secs:number = this.frequency.secs || 0;
+		const timerMs:number = (hours * 60 * 60 *1000) + (mins * 60 * 1000) + (secs * 1000);
+		if (timerMs < 1) {
+			// console.log(`Timout is too small: ${this.id}: ${timerMs}`)
+			return;
+		}
+		// console.log(`setting timeout for ${this.name} to ${timerMs}ms`);
+		this.timeoutId = window.setTimeout(async () => {
+			await this.runJob();
+		}, timerMs);
 	}
 
 	public async runJob(): Promise<void> {
@@ -62,25 +93,11 @@ export default class Job {
 			return false
 		}
 
-		if(!this.jobIntervalPassed()) {
-			this.noRunReason = "job interval hasnt passed"
-			return false
-		}
-
 		return true
 	}
 
 	public clearJobLock(): void {
 		this.lockManager.clearLock()
-	}
-
-	private jobIntervalPassed(): boolean {
-		// job never ran
-		const lastRun = this.lockManager.lastRun()
-		if(!lastRun) return true
-
-		const prevRun = window.moment(parseExpression(this.frequency).prev().toDate())
-		return prevRun.isAfter(lastRun)
 	}
 
 	private async runJobFunction(): Promise<void> {
@@ -96,6 +113,7 @@ export default class Job {
 	}
 
 	private async runJobCommand(): Promise<void> {
+		// console.log(`running: ${this.job}`)
 		if(typeof this.job !== 'string') { return }
 
 		const jobCommand = this.app.commands.commands[this.job];
