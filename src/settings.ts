@@ -65,7 +65,7 @@ export default class CronSettingTab extends PluginSettingTab {
 
 		const desc = document.createDocumentFragment();
 		desc.append(
-			"List of Jobs to run.",
+			"List of Jobs to run. TIP: use the `Commander` plugin or similar for complex tasks.",
 		);
 
 		new Setting(containerEl)
