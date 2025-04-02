@@ -15,7 +15,7 @@ export default class CronSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
-		containerEl.createEl('h2', { text: 'Settings for Cron.' });
+		containerEl.createEl('h2', { text: 'Inactivity Commands.' });
 
 		// new Setting(containerEl)
 		// 	.setName('Cron Interval')
@@ -31,8 +31,8 @@ export default class CronSettingTab extends PluginSettingTab {
 		// 	);
 
 		new Setting(containerEl)
-			.setName('Run cron on startup')
-			.setDesc('Do a cron run on startup instead of waiting for the first interval to pass')
+			.setName('Run commands on startup')
+			.setDesc('Run all jobs on Obsidian startup instead of waiting for the job intervals to pass')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.runOnStartup)
 				.onChange(async (value) => {
@@ -43,7 +43,7 @@ export default class CronSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Enable Obsidian Sync Checker')
-			.setDesc('Whether or not to wait for Obsidian sync before running any CRONs globally.')
+			.setDesc('Whether or not to wait for Obsidian sync before running any jobs globally.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.watchObsidianSync)
 				.onChange(async (value) => {
@@ -65,18 +65,11 @@ export default class CronSettingTab extends PluginSettingTab {
 
 		const desc = document.createDocumentFragment();
 		desc.append(
-			"List of CRON Jobs to run. Jobs will not be ran until all 3 fields have been filled",
-			desc.createEl("br"),
-			"Cron Frequency is a cron schedule expression. Use ",
-			desc.createEl("a", {
-				href: "https://crontab.guru/",
-				text: "crontab guru",
-			}),
-			" for help with creating cron schedule expressions."
+			"List of Jobs to run.",
 		);
 
 		new Setting(containerEl)
-			.setName("Cron Jobs")
+			.setName("Inactivity Jobs")
 			.setDesc(desc)
 
 		this.addCommandSearch()
@@ -107,7 +100,7 @@ export default class CronSettingTab extends PluginSettingTab {
 							await this.plugin.saveSettings();
 							this.plugin.loadJobs();
 						})
-						.inputEl.addClass('cron-plugin-text-input')
+						.inputEl.addClass('inactivity-commands-plugin-text-input')
 				})
 				.addText(text => text
 					.setPlaceholder("hours")
@@ -117,7 +110,7 @@ export default class CronSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 						this.plugin.loadJobs();
 					})
-					.inputEl.addClass('cron-plugin-text-input')
+					.inputEl.addClass('inactivity-commands-plugin-text-input')
 				)
 				.addText(text => text
 					.setPlaceholder("mins")
@@ -127,18 +120,18 @@ export default class CronSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 						this.plugin.loadJobs();
 					})
-					.inputEl.addClass('cron-plugin-text-input')
+					.inputEl.addClass('inactivity-commands-plugin-text-input')
 				)
-				.addText(text => text
-					.setPlaceholder("hours")
-					.setValue(iacJob.frequency.secs?`${iacJob.frequency.secs}`:"")
-					.onChange(async (value) => {
-						this.plugin.settings.jobs[index].frequency.secs = Number(value);
-						await this.plugin.saveSettings();
-						this.plugin.loadJobs();
-					})
-					.inputEl.addClass('cron-plugin-text-input')
-				)
+				// .addText(text => text
+				// 	.setPlaceholder("secs")
+				// 	.setValue(iacJob.frequency.secs?`${iacJob.frequency.secs}`:"")
+				// 	.onChange(async (value) => {
+				// 		this.plugin.settings.jobs[index].frequency.secs = Number(value);
+				// 		await this.plugin.saveSettings();
+				// 		this.plugin.loadJobs();
+				// 	})
+				// 	.inputEl.addClass('inactivity-commands-plugin-text-input')
+				// )
 				.addExtraButton((button) => {
 					button.setIcon(iacJob.settings.enableMobile ? "lucide-phone" : "lucide-phone-off")
 						.setTooltip("Toggle job on mobile")
@@ -185,11 +178,11 @@ export default class CronSettingTab extends PluginSettingTab {
 						});
 				});
 
-			jobSetting.controlEl.addClass("cron-plugin-job")
+			jobSetting.controlEl.addClass("inactivity-commands-plugin-job")
 		});
 
 		new Setting(this.containerEl).addButton((cb) => {
-			cb.setButtonText("Add cron job")
+			cb.setButtonText("Add job")
 				.setCta()
 				.onClick(() => {
 					this.plugin.settings.jobs.push({
