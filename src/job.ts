@@ -1,5 +1,4 @@
 import { App, Notice } from "obsidian";
-import CronLockManager from "./lockManager";
 import CraitPlugin from "./main";
 import SyncChecker from "./syncChecker";
 
@@ -36,7 +35,7 @@ export default class Job {
   plugin: CraitPlugin;
   app: App;
 
-  lockManager: CronLockManager;
+  // lockManager: CronLockManager;
   settings: JobSettings;
   job: string; // TODO: better support of jobFunc `|JobFunc`
   name: string;
@@ -68,7 +67,7 @@ export default class Job {
     this.plugin = plugin;
     this.app = app;
 
-    this.lockManager = new CronLockManager(id, settings, plugin, syncChecker);
+    // this.lockManager = new CronLockManager(id, settings, plugin, syncChecker)
     this.name = name;
     this.id = id;
     this.job = job;
@@ -126,22 +125,24 @@ export default class Job {
   public async runJob(): Promise<void> {
     new Notice(`Focus timers: Running ${this.name}`);
 
-    await this.lockManager.lockJob();
+    new Notice(`Focus timers: Running ${this.name}`);
+
+    // await this.lockManager.lockJob();
 
     /* TODO: better support of jobFunc `|JobFunc`
     typeof this.job == "string" ? await this.runJobCommand() : await this.runJobFunction();
     */
     await this.runJobCommand(); // string version ONLY
 
-    await this.lockManager.updateLastrun();
-    await this.lockManager.unlockJob();
+    // await this.lockManager.updateLastrun();
+    // await this.lockManager.unlockJob();
   }
 
   public canRunJob(): boolean {
-    if (this.lockManager.jobLocked() && !this.settings.disableJobLock) {
-      this.noRunReason = "job locked";
-      return false;
-    }
+    // if(this.lockManager.jobLocked() && !this.settings.disableJobLock) {
+    //   this.noRunReason = "job locked"
+    //   return false
+    // }
 
     if (this.app.isMobile && !this.settings.enableMobile) {
       this.noRunReason = "disabled on mobile";
@@ -151,9 +152,9 @@ export default class Job {
     return true;
   }
 
-  public clearJobLock(): void {
-    this.lockManager.clearLock();
-  }
+  // public clearJobLock(): void {
+  //   this.lockManager.clearLock();
+  // }
 
   /* TODO: better support of jobFunc `|JobFunc`
   private async runJobFunction(): Promise<void> {

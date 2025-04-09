@@ -1,9 +1,9 @@
 import { Notice, Plugin } from "obsidian";
 import Job, { CraitJob, JobFrequency, JobSettings } from "./job";
-import { CronLock } from "./lockManager";
-import CronLockManager from "./lockManager";
 import CronSettingTab from "./settings";
 import SyncChecker from "./syncChecker";
+//import { CronLock } from './lockManager';
+//import CronLockManager from './lockManager';
 // TODO:reintroduce: import CraitAPI from './api';
 
 export interface CraitSettings {
@@ -13,7 +13,7 @@ export interface CraitSettings {
   lastUpdatedMs: number | null; // Timestamp in milliseconds
   watchObsidianSync: boolean;
   jobs: Array<CraitJob>;
-  locks: { [key: string]: CronLock };
+  // locks: { [key: string]: CronLock };
 }
 
 const DEFAULT_SETTINGS: CraitSettings = {
@@ -23,14 +23,14 @@ const DEFAULT_SETTINGS: CraitSettings = {
   lastUpdatedMs: null, // null = not loaded/set
   watchObsidianSync: false,
   jobs: [],
-  locks: {},
+  // locks: {},
 };
 
 export default class CraitPlugin extends Plugin {
   static instance: CraitPlugin;
   settings: CraitSettings;
   syncChecker: SyncChecker;
-  lockManager: CronLockManager;
+  // lockManager: CronLockManager;
   jobs: { [key: string]: Job };
   // TODO:reintroduce: api: api: CraitAPI
 
@@ -141,11 +141,11 @@ export default class CraitPlugin extends Plugin {
     await job.runJob();
   }
 
-  public clearJobLock(name: string) {
-    const job = this.getJob(name);
-    if (!job) throw new Error("CRAIT job doesn't exist");
-    job.clearJobLock();
-  }
+  // public clearJobLock(name: string) {
+  //   const job = this.getJob(name);
+  //   if (!job) throw new Error("CRAIT job doesn't exist");
+  //   job.clearJobLock();
+  // }
 
   public getJob(name: string): Job | null {
     for (const [, job] of Object.entries(this.jobs)) {

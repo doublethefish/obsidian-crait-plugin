@@ -18,17 +18,17 @@ export default class CronSettingTab extends PluginSettingTab {
     containerEl.createEl("h2", { text: "Inactivity Commands." });
 
     // new Setting(containerEl)
-    // 	.setName('Cron Interval')
-    // 	.setDesc('The interval the cron will run in minutes')
-    // 	.addText(text => text
-    // 		.setValue(this.plugin.settings.cronInterval.toString())
-    // 		.onChange(async (value) => {
-    // 			if (value == "") { return }
-    // 			this.plugin.settings.cronInterval = parseInt(value);
-    // 			await this.plugin.saveSettings();
-    // 			this.plugin.loadInterval();
-    // 		})
-    // 	);
+    //   .setName('Cron Interval')
+    //   .setDesc('The interval the cron will run in minutes')
+    //   .addText(text => text
+    //     .setValue(this.plugin.settings.cronInterval.toString())
+    //     .onChange(async (value) => {
+    //       if (value == "") { return }
+    //       this.plugin.settings.cronInterval = parseInt(value);
+    //       await this.plugin.saveSettings();
+    //       this.plugin.loadInterval();
+    //     })
+    //   );
 
     new Setting(containerEl)
       .setName("Run commands on startup")
@@ -130,14 +130,14 @@ export default class CronSettingTab extends PluginSettingTab {
             .inputEl.addClass("inactivity-commands-job-time")
         )
         // .addText(text => text
-        // 	.setPlaceholder("secs")
-        // 	.setValue(craitJob.frequency.secs?`${craitJob.frequency.secs}`:"")
-        // 	.onChange(async (value) => {
-        // 		this.plugin.settings.jobs[index].frequency.secs = Number(value);
-        // 		await this.plugin.saveSettings();
-        // 		this.plugin.loadJobs();
-        // 	})
-        // 	.inputEl.addClass('inactivity-commands-plugin-text-input')
+        //   .setPlaceholder("secs")
+        //   .setValue(craitJob.frequency.secs?`${craitJob.frequency.secs}`:"")
+        //   .onChange(async (value) => {
+        //     this.plugin.settings.jobs[index].frequency.secs = Number(value);
+        //     await this.plugin.saveSettings();
+        //     this.plugin.loadJobs();
+        //   })
+        //   .inputEl.addClass('inactivity-commands-plugin-text-input')
         // )
         .addExtraButton((button) => {
           button
@@ -154,20 +154,22 @@ export default class CronSettingTab extends PluginSettingTab {
             });
         });
 
-      const jobLocked =
-        this.plugin.settings.locks[craitJob.id] &&
-        this.plugin.settings.locks[craitJob.id].locked;
-      jobSetting.addExtraButton((button) => {
-        button
-          .setIcon(jobLocked ? "lucide-lock" : "lucide-unlock")
-          .setTooltip("Toggle job lock (clear lock if accidentally left locked)")
-          .onClick(() => {
-            this.plugin.settings.locks[craitJob.id].locked = !jobLocked;
-            this.plugin.saveSettings();
-            // refresh
-            this.display();
-          });
-      });
+      // const jobLocked =
+      //   this.plugin.settings.locks[craitJob.id] &&
+      //   this.plugin.settings.locks[craitJob.id].locked;
+      // jobSetting.addExtraButton((button) => {
+      //   button
+      //     .setIcon(jobLocked ? "lucide-lock" : "lucide-unlock")
+      //     .setTooltip(
+      //       "Toggle job lock (clear lock if accidentally left locked)"
+      //     )
+      //     .onClick(() => {
+      //       this.plugin.settings.locks[craitJob.id].locked = !jobLocked;
+      //       this.plugin.saveSettings();
+      //       // refresh
+      //       this.display();
+      //     });
+      // });
 
       jobSetting
         .addExtraButton((button) => {
@@ -194,7 +196,7 @@ export default class CronSettingTab extends PluginSettingTab {
             .onClick(() => {
               this.plugin.settings.jobs.splice(index, 1);
               delete this.plugin.jobs[craitJob.id];
-              delete this.plugin.settings.locks[craitJob.id];
+              // delete this.plugin.settings.locks[craitJob.id];
               this.plugin.saveSettings();
               // Force refresh
               this.display();

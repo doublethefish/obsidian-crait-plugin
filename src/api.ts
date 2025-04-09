@@ -16,9 +16,9 @@ export default class CraitAPI {
       runJob(name: string) {
         return plugin.runJob(name);
       },
-      clearJobLock(name: string) {
-        return plugin.clearJobLock(name);
-      },
+      // clearJobLock(name: string) {
+      //   return plugin.clearJobLock(name);
+      // },
       getJob(name: string) {
         return plugin.getJob(name);
       },
