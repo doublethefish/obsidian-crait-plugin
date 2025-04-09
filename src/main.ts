@@ -1,171 +1,197 @@
-import { Plugin } from 'obsidian';
-import Job, { JobFrequency, JobFunc, JobSettings } from './job';
-import { CronLock } from './lockManager';
-import CronLockManager from './lockManager';
-import CronSettingTab from './settings';
-import SyncChecker from './syncChecker';
-import CraitAPI from './api';
+import { Plugin } from "obsidian";
+import Job, { JobFrequency, JobFunc, JobSettings } from "./job";
+import { CronLock } from "./lockManager";
+import CronLockManager from "./lockManager";
+import CronSettingTab from "./settings";
+import SyncChecker from "./syncChecker";
+import CraitAPI from "./api";
 
 export interface CraitSettings {
-	runOnStartup: boolean
-	enableMobile: boolean
-	watchObsidianSync: boolean
-	jobs: Array<CraitJob>,
-	locks: { [key: string]: CronLock }
+  runOnStartup: boolean;
+  enableMobile: boolean;
+  watchObsidianSync: boolean;
+  jobs: Array<CraitJob>;
+  locks: { [key: string]: CronLock };
 }
 
 export interface CraitJob {
-	id: string
-	name: string
-	job: string
-	frequency: {
-		hours?: number
-		mins?: number
-		secs?: number
-	}
-	settings: JobSettings
+  id: string;
+  name: string;
+  job: string;
+  frequency: {
+    hours?: number;
+    mins?: number;
+    secs?: number;
+  };
+  settings: JobSettings;
 }
 
 const DEFAULT_SETTINGS: CraitSettings = {
-	runOnStartup: true,
-	enableMobile: true,
-	watchObsidianSync: false,
-	jobs: [],
-	locks: {}
-}
+  runOnStartup: true,
+  enableMobile: true,
+  watchObsidianSync: false,
+  jobs: [],
+  locks: {},
+};
 
 export default class CraitPlugin extends Plugin {
-	static instance: CraitPlugin
-	settings: CraitSettings;
-	syncChecker: SyncChecker
-	lockManager: CronLockManager
-	jobs: { [key: string]: Job }
-	api: CraitAPI
+  static instance: CraitPlugin;
+  settings: CraitSettings;
+  syncChecker: SyncChecker;
+  lockManager: CronLockManager;
+  jobs: { [key: string]: Job };
+  api: CraitAPI;
 
-	/** Called when the plugin is loaded. */
-	async onload() {
-		console.log("Loading Inactivity Timers!");
-		CraitPlugin.instance = this;
-		await this.loadSettings();
+  /** Called when the plugin is loaded. */
+  async onload() {
+    console.log("Loading Inactivity Timers!");
+    CraitPlugin.instance = this;
+    await this.loadSettings();
 
-		this.addSettingTab(new CronSettingTab(this.app, this));
-		this.syncChecker = new SyncChecker(this.app, this);
+    this.addSettingTab(new CronSettingTab(this.app, this));
+    this.syncChecker = new SyncChecker(this.app, this);
 
-		this.jobs = {}
+    this.jobs = {};
 
-		// load our cronjobs
-		this.loadJobs()
-		this.api = CraitAPI.get(this)
-		this.app.workspace.onLayoutReady(() => {
-			if(this.settings.runOnStartup) {
-				if(this.app.isMobile && !this.settings.enableMobile)
-				{ 
-					return
-				}
-				this.runJobs()
-			}
-		})
+    // load our cronjobs
+    this.loadJobs();
+    this.api = CraitAPI.get(this);
+    this.app.workspace.onLayoutReady(() => {
+      if (this.settings.runOnStartup) {
+        if (this.app.isMobile && !this.settings.enableMobile) {
+          return;
+        }
+        this.runJobs();
+      }
+    });
 
-		// Configure the timeouts
-		this.resetTimeout();
-		this.initInactivity();
-	}
+    // Configure the timeouts
+    this.resetTimeout();
+    this.initInactivity();
+  }
 
-	public async runJobs() {
-		// console.log("Running inactive-timers jobs!")
-		for (const [, job] of Object.entries(this.jobs)) {
-			await this.syncChecker.waitForSync(job.settings)
+  public async runJobs() {
+    // console.log("Running inactive-timers jobs!")
+    for (const [, job] of Object.entries(this.jobs)) {
+      await this.syncChecker.waitForSync(job.settings);
 
-			// reload the settings incase we've had a new lock come in via sync
-			await this.loadSettings()
+      // reload the settings incase we've had a new lock come in via sync
+      await this.loadSettings();
 
-			if(!job.canRunJob()) {
-				// console.log(`Can't run job: ${job.noRunReason}`)
-				continue
-			}
+      if (!job.canRunJob()) {
+        // console.log(`Can't run job: ${job.noRunReason}`)
+        continue;
+      }
 
-			await job.runJob()
-		}
-	}
-	
-	public initInactivity() {
-		// Listen to common user interactions to reset the timer.
-		this.registerDomEvent(window, 'mousemove', () => this.resetTimeout());
-		this.registerDomEvent(window, 'keydown', () => this.resetTimeout());
-		this.registerDomEvent(window, 'mousedown', () => this.resetTimeout());
-	}
+      await job.runJob();
+    }
+  }
 
-	public addJob(name: string, frequency: JobFrequency, settings: JobSettings, job: JobFunc) {
-		const existingJob = this.getJob(name)
-		if(existingJob) throw new Error("CRAIT job already exists")
+  public initInactivity() {
+    // Listen to common user interactions to reset the timer.
+    this.registerDomEvent(window, "mousemove", () => this.resetTimeout());
+    this.registerDomEvent(window, "keydown", () => this.resetTimeout());
+    this.registerDomEvent(window, "mousedown", () => this.resetTimeout());
+  }
 
-		this.jobs[name] = new Job(name, name, job, frequency, settings, this.app, this, this.syncChecker)
-	}
+  public addJob(
+    name: string,
+    frequency: JobFrequency,
+    settings: JobSettings,
+    job: JobFunc
+  ) {
+    const existingJob = this.getJob(name);
+    if (existingJob) throw new Error("CRAIT job already exists");
 
-	public async runJob(name: string) {
-		const job = this.getJob(name)
-		if(!job) throw new Error("CRAIT job doesn't exist")
-		await job.runJob()
-	}
+    this.jobs[name] = new Job(
+      name,
+      name,
+      job,
+      frequency,
+      settings,
+      this.app,
+      this,
+      this.syncChecker
+    );
+  }
 
-	public clearJobLock(name: string) {
-		const job = this.getJob(name)
-		if(!job) throw new Error("CRAIT job doesn't exist")
-		job.clearJobLock()
-	}
+  public async runJob(name: string) {
+    const job = this.getJob(name);
+    if (!job) throw new Error("CRAIT job doesn't exist");
+    await job.runJob();
+  }
 
-	public getJob(name: string): Job | null {
-		for (const [, job] of Object.entries(this.jobs)) {
-			if(job.name == name) return job
-		}
-		return null
-	}
+  public clearJobLock(name: string) {
+    const job = this.getJob(name);
+    if (!job) throw new Error("CRAIT job doesn't exist");
+    job.clearJobLock();
+  }
 
-	public onunload() {
-		if(this.settings.watchObsidianSync)	this.syncChecker.handleUnload()
-		// console.log("CRAIT unloaded")
-	}
+  public getJob(name: string): Job | null {
+    for (const [, job] of Object.entries(this.jobs)) {
+      if (job.name == name) return job;
+    }
+    return null;
+  }
 
-	public loadJobs() {
-		this.settings.jobs.forEach(craitJob => {
-			if (craitJob.job === "") {
-				// empty job, nothing to do.
-				return;
-			}
+  public onunload() {
+    if (this.settings.watchObsidianSync) this.syncChecker.handleUnload();
+    // console.log("CRAIT unloaded")
+  }
 
-			if((craitJob.frequency.hours === undefined) && (craitJob.frequency.mins === undefined) && (craitJob.frequency.secs === undefined)) {
-				// no timeout config set
-				return;
-			}
+  public loadJobs() {
+    this.settings.jobs.forEach((craitJob) => {
+      if (craitJob.job === "") {
+        // empty job, nothing to do.
+        return;
+      }
 
-			this.jobs[craitJob.id] = new Job(craitJob.id, craitJob.name, craitJob.job, craitJob.frequency, craitJob.settings, this.app, this, this.syncChecker)
-		});
-	}
+      if (
+        craitJob.frequency.hours === undefined &&
+        craitJob.frequency.mins === undefined &&
+        craitJob.frequency.secs === undefined
+      ) {
+        // no timeout config set
+        return;
+      }
 
-	private clearTimeout() {
-		for (const [, job] of Object.entries(this.jobs)) {
-			job.clearTimeout()
-		}
-	}
+      this.jobs[craitJob.id] = new Job(
+        craitJob.id,
+        craitJob.name,
+        craitJob.job,
+        craitJob.frequency,
+        craitJob.settings,
+        this.app,
+        this,
+        this.syncChecker
+      );
+    });
+  }
 
-	/** Resets the inactivity timer. */
-	private resetTimeout() {
-		this.clearTimeout();
-		if(this.app.isMobile && !this.settings.enableMobile) {
-			// we're disabled on mobile, do nothing.
-			return;
-		}
-		for (const [, job] of Object.entries(this.jobs)) {
-			job.resetTimeout()
-		}
-	}
+  private clearTimeout() {
+    for (const [, job] of Object.entries(this.jobs)) {
+      job.clearTimeout();
+    }
+  }
 
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	}
+  /** Resets the inactivity timer. */
+  private resetTimeout() {
+    this.clearTimeout();
+    if (this.app.isMobile && !this.settings.enableMobile) {
+      // we're disabled on mobile, do nothing.
+      return;
+    }
+    for (const [, job] of Object.entries(this.jobs)) {
+      job.resetTimeout();
+    }
+  }
 
-	async saveSettings() {
-		await this.saveData(this.settings);
-		this.resetTimeout()
-	}
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+
+  async saveSettings() {
+    await this.saveData(this.settings);
+    this.resetTimeout();
+  }
 }
