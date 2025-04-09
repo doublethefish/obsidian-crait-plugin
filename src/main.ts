@@ -1,4 +1,4 @@
-import { Notice, Plugin } from "obsidian";
+import { debounce, Debouncer, Notice, Plugin } from "obsidian";
 import Job, { CraitJob, JobFrequency, JobSettings } from "./job";
 import CronSettingTab from "./settings";
 import SyncChecker from "./syncChecker";
@@ -32,12 +32,18 @@ export default class CraitPlugin extends Plugin {
   syncChecker: SyncChecker;
   // lockManager: CronLockManager;
   jobs: { [key: string]: Job };
+  saveSettings: Debouncer<[], void>;
   // TODO:reintroduce: api: api: CraitAPI
 
   /** Called when the plugin is loaded. */
   async onload() {
     console.log("Loading Crait!");
+
+    // set up the save debouncer
+    this.setSaveSettingsDebouncer();
+
     CraitPlugin.instance = this;
+
     await this.loadSettings();
 
     this.addSettingTab(new CronSettingTab(this.app, this));
@@ -205,10 +211,17 @@ export default class CraitPlugin extends Plugin {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
   }
 
-  async saveSettings() {
-    new Notice("Focus timers: Saving settings");
-    // TODO: do NOT spam settings
-    await this.saveData(this.settings);
-    this.resetTimeout();
+  private setSaveSettingsDebouncer(): void {
+    this.saveSettings?.cancel();
+    this.saveSettings = debounce(
+      () => {
+        new Notice("Focus timers: Saving settings");
+        this.saveData(this.settings).then(() => {
+          this.resetTimeout();
+        });
+      },
+      60 * 1000,
+      true
+    );
   }
 }
