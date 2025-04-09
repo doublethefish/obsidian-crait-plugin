@@ -36,7 +36,7 @@ export default class CraitPlugin extends Plugin {
 
   /** Called when the plugin is loaded. */
   async onload() {
-    console.log("Loading Inactivity Timers!");
+    console.log("Loading Crait!");
     CraitPlugin.instance = this;
     await this.loadSettings();
 
