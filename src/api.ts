@@ -1,11 +1,11 @@
 import { JobFrequency, JobFunc, JobSettings } from "./job"
-import IACPlugin from "./main"
+import CraitPlugin from "./main"
 
 
-export default class InactivityCommandsAPI {
-	static instance: InactivityCommandsAPI
+export default class CraitAPI {
+	static instance: CraitAPI
 
-	public static get(plugin: IACPlugin) {
+	public static get(plugin: CraitPlugin) {
 		return {
 			addJob(name: string, frequency: JobFrequency, settings: JobSettings, job: JobFunc) {
 				return plugin.addJob(name, frequency, settings, job)

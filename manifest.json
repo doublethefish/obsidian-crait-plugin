@@ -1,9 +1,9 @@
 {
-	"id": "inactivity-commands",
-	"name": "Inactivity Commands",
+	"id": "crait",
+	"name": "Crait",
 	"version": "0.0.1",
 	"minAppVersion": "0.15.0",
-	"description": "Simple plugin to run commands and user scripts after a period of inactivity.",
+	"description": "Command runner after inactivity timeouts [CRAIT] auto-runs commands after you've not been active in Obsidian, helping re-focus attention or automate tasks.",
 	"author": "Frank Allan Harrison",
 	"authorUrl": "https://frankallanharrison.com",
 	"isDesktopOnly": false

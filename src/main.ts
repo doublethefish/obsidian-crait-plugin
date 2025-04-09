@@ -4,17 +4,17 @@ import { CronLock } from './lockManager';
 import CronLockManager from './lockManager';
 import CronSettingTab from './settings';
 import SyncChecker from './syncChecker';
-import InactivityCommandsAPI from './api';
+import CraitAPI from './api';
 
-export interface IACSettings {
+export interface CraitSettings {
 	runOnStartup: boolean
 	enableMobile: boolean
 	watchObsidianSync: boolean
-	jobs: Array<IACJob>,
+	jobs: Array<CraitJob>,
 	locks: { [key: string]: CronLock }
 }
 
-export interface IACJob {
+export interface CraitJob {
 	id: string
 	name: string
 	job: string
@@ -26,7 +26,7 @@ export interface IACJob {
 	settings: JobSettings
 }
 
-const DEFAULT_SETTINGS: IACSettings = {
+const DEFAULT_SETTINGS: CraitSettings = {
 	runOnStartup: true,
 	enableMobile: true,
 	watchObsidianSync: false,
@@ -34,18 +34,18 @@ const DEFAULT_SETTINGS: IACSettings = {
 	locks: {}
 }
 
-export default class IACPlugin extends Plugin {
-	static instance: IACPlugin
-	settings: IACSettings;
+export default class CraitPlugin extends Plugin {
+	static instance: CraitPlugin
+	settings: CraitSettings;
 	syncChecker: SyncChecker
 	lockManager: CronLockManager
 	jobs: { [key: string]: Job }
-	api: InactivityCommandsAPI
+	api: CraitAPI
 
 	/** Called when the plugin is loaded. */
 	async onload() {
-		console.log("Loading Obsidian Inactivity Commands!");
-		IACPlugin.instance = this;
+		console.log("Loading Inactivity Timers!");
+		CraitPlugin.instance = this;
 		await this.loadSettings();
 
 		this.addSettingTab(new CronSettingTab(this.app, this));
@@ -55,7 +55,7 @@ export default class IACPlugin extends Plugin {
 
 		// load our cronjobs
 		this.loadJobs()
-		this.api = InactivityCommandsAPI.get(this)
+		this.api = CraitAPI.get(this)
 		this.app.workspace.onLayoutReady(() => {
 			if(this.settings.runOnStartup) {
 				if(this.app.isMobile && !this.settings.enableMobile)
@@ -72,7 +72,7 @@ export default class IACPlugin extends Plugin {
 	}
 
 	public async runJobs() {
-		// console.log("Running Obsidian Cron!")
+		// console.log("Running inactive-timers jobs!")
 		for (const [, job] of Object.entries(this.jobs)) {
 			await this.syncChecker.waitForSync(job.settings)
 
@@ -97,20 +97,20 @@ export default class IACPlugin extends Plugin {
 
 	public addJob(name: string, frequency: JobFrequency, settings: JobSettings, job: JobFunc) {
 		const existingJob = this.getJob(name)
-		if(existingJob) throw new Error("Inactivity Commands Job already exists")
+		if(existingJob) throw new Error("CRAIT job already exists")
 
 		this.jobs[name] = new Job(name, name, job, frequency, settings, this.app, this, this.syncChecker)
 	}
 
 	public async runJob(name: string) {
 		const job = this.getJob(name)
-		if(!job) throw new Error("CRON Job doesn't exist")
+		if(!job) throw new Error("CRAIT job doesn't exist")
 		await job.runJob()
 	}
 
 	public clearJobLock(name: string) {
 		const job = this.getJob(name)
-		if(!job) throw new Error("CRON Job doesn't exist")
+		if(!job) throw new Error("CRAIT job doesn't exist")
 		job.clearJobLock()
 	}
 
@@ -123,22 +123,22 @@ export default class IACPlugin extends Plugin {
 
 	public onunload() {
 		if(this.settings.watchObsidianSync)	this.syncChecker.handleUnload()
-		// console.log("Inactivity Commands unloaded")
+		// console.log("CRAIT unloaded")
 	}
 
 	public loadJobs() {
-		this.settings.jobs.forEach(iacJob => {
-			if (iacJob.job === "") {
+		this.settings.jobs.forEach(craitJob => {
+			if (craitJob.job === "") {
 				// empty job, nothing to do.
 				return;
 			}
 
-			if((iacJob.frequency.hours === undefined) && (iacJob.frequency.mins === undefined) && (iacJob.frequency.secs === undefined)) {
+			if((craitJob.frequency.hours === undefined) && (craitJob.frequency.mins === undefined) && (craitJob.frequency.secs === undefined)) {
 				// no timeout config set
 				return;
 			}
 
-			this.jobs[iacJob.id] = new Job(iacJob.id, iacJob.name, iacJob.job, iacJob.frequency, iacJob.settings, this.app, this, this.syncChecker)
+			this.jobs[craitJob.id] = new Job(craitJob.id, craitJob.name, craitJob.job, craitJob.frequency, craitJob.settings, this.app, this, this.syncChecker)
 		});
 	}
 

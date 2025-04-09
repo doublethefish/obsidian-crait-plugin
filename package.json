@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-cron-plugin",
-	"version": "1.1.2",
-	"description": "Simple CRON / Schedular plugin to regularly run user scripts or Obsidian commands for Obsidian (https://obsidian.md)",
+	"name": "Crait",
+	"version": "0.0.1",
+	"description": "Command runner after inactivity timeouts [Crait] auto-runs commands after you've not been active in Obsidian, helping re-focus attention or automate tasks.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
@@ -11,7 +11,7 @@
 		"semantic-release": "semantic-release"
 	},
 	"keywords": [],
-	"author": "Callum Loh",
+	"author": "Frank Allan Harrison",
 	"license": "MIT",
 	"devDependencies": {
 		"@semantic-release/git": "^10.0.1",
@@ -28,7 +28,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/cdloh/obsidian-cron.git"
+		"url": "https://github.com/doublethefish/obsidian-crait-plugin"
 	},
 	"dependencies": {
 		"@popperjs/core": "^2.11.6",
@@ -78,5 +78,6 @@
 				}
 			]
 		]
-	}
+	},
+	"packageManager": "yarn@4.7.0+sha512.5a0afa1d4c1d844b3447ee3319633797bcd6385d9a44be07993ae52ff4facabccafb4af5dcd1c2f9a94ac113e5e9ff56f6130431905884414229e284e37bb7c9"
 }
