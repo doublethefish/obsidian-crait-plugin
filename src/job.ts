@@ -1,6 +1,6 @@
 import { App } from 'obsidian';
 import CronLockManager from './lockManager';
-import IACPlugin from './main';
+import CraitPlugin from './main';
 import SyncChecker from './syncChecker';
 
 export interface JobFunc {(app:App): Promise<void> | void}
@@ -19,7 +19,7 @@ export interface JobSettings {
 
 export default class Job {
 	syncChecker: SyncChecker;
-	plugin: IACPlugin
+	plugin: CraitPlugin
 	app: App;
 
 	lockManager: CronLockManager;
@@ -31,7 +31,7 @@ export default class Job {
 	frequency: JobFrequency
 	timeoutId: number
 
-	public constructor(id: string, name: string, job: JobFunc | string, frequency: JobFrequency, settings: JobSettings, app: App, plugin: IACPlugin, syncChecker: SyncChecker) {
+	public constructor(id: string, name: string, job: JobFunc | string, frequency: JobFrequency, settings: JobSettings, app: App, plugin: CraitPlugin, syncChecker: SyncChecker) {
 		this.syncChecker = syncChecker;
 		this.plugin = plugin;
 		this.app = app;

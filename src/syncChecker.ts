@@ -1,6 +1,6 @@
 import { App } from 'obsidian';
 import { JobSettings } from './job';
-import IACPlugin from './main';
+import CraitPlugin from './main';
 
 const syncEmitterName = 'status-change';
 const syncCompletedStatus = 'synced';
@@ -14,10 +14,10 @@ type promiseEntry = {
 export default class SyncChecker {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	syncInstance: any
-	plugin: IACPlugin
+	plugin: CraitPlugin
 	syncWaiters: Array<promiseEntry>
 
-	public constructor(app: App, plugin: IACPlugin) {
+	public constructor(app: App, plugin: CraitPlugin) {
 		this.syncInstance = app.internalPlugins.plugins['sync'].instance;
 		this.plugin = plugin;
 		this.syncWaiters = [];
