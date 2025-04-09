@@ -1,5 +1,4 @@
-import { App } from "obsidian";
-import CronLockManager from "./lockManager";
+import { App, Notice } from "obsidian";
 import CraitPlugin from "./main";
 import SyncChecker from "./syncChecker";
 
@@ -19,14 +18,26 @@ export interface JobSettings {
   disableJobLock?: boolean;
 }
 
+export interface CraitJob {
+  id: string;
+  name: string;
+  job: string; // TODO: better support of jobFunc `|JobFunc`
+  frequency: {
+    hours?: number;
+    mins?: number;
+    secs?: number;
+  };
+  settings: JobSettings;
+}
+
 export default class Job {
   syncChecker: SyncChecker;
   plugin: CraitPlugin;
   app: App;
 
-  lockManager: CronLockManager;
+  // lockManager: CronLockManager;
   settings: JobSettings;
-  job: JobFunc | string;
+  job: string; // TODO: better support of jobFunc `|JobFunc`
   name: string;
   id: string;
   noRunReason: string;
@@ -34,20 +45,29 @@ export default class Job {
   timeoutId: number;
 
   public constructor(
-    id: string,
-    name: string,
-    job: JobFunc | string,
-    frequency: JobFrequency,
-    settings: JobSettings,
+    craitJob: CraitJob,
     app: App,
     plugin: CraitPlugin,
     syncChecker: SyncChecker
   ) {
+    const {
+      id,
+      name,
+      job,
+      frequency,
+      settings,
+    }: {
+      id: string;
+      name: string;
+      job: string;
+      frequency: JobFrequency;
+      settings: JobSettings;
+    } = craitJob;
     this.syncChecker = syncChecker;
     this.plugin = plugin;
     this.app = app;
 
-    this.lockManager = new CronLockManager(id, settings, plugin, syncChecker);
+    // this.lockManager = new CronLockManager(id, settings, plugin, syncChecker)
     this.name = name;
     this.id = id;
     this.job = job;
@@ -58,6 +78,29 @@ export default class Job {
   /** Removes the timer for this job **/
   public clearTimeout() {
     clearTimeout(this.timeoutId);
+  }
+
+  /** Called when Obsidian is restarted.
+   *   We check for delta on timer and run the commands if the time has been exceded
+   **/
+  public onLoad(lastUpdatedMs: number | null) {
+    if (lastUpdatedMs == null) {
+      return;
+    }
+
+    const thresholdMs: number =
+      ((this.frequency.hours || 0) * 3600 +
+        (this.frequency.mins || 0) * 60 +
+        (this.frequency.secs || 0)) *
+      1000;
+
+    // Get current time in milliseconds
+    const nowMs = Date.now();
+
+    // Check if more than the delta time has elapsed since lastUpdatedMs
+    if (nowMs - lastUpdatedMs > thresholdMs) {
+      this.runJob();
+    }
   }
 
   /** Resets the timout for this job. */
@@ -80,23 +123,26 @@ export default class Job {
   }
 
   public async runJob(): Promise<void> {
-    console.log(`Running ${this.name}`);
+    new Notice(`Focus timers: Running ${this.name}`);
 
-    await this.lockManager.lockJob();
+    new Notice(`Focus timers: Running ${this.name}`);
 
-    typeof this.job == "string"
-      ? await this.runJobCommand()
-      : await this.runJobFunction();
+    // await this.lockManager.lockJob();
 
-    await this.lockManager.updateLastrun();
-    await this.lockManager.unlockJob();
+    /* TODO: better support of jobFunc `|JobFunc`
+    typeof this.job == "string" ? await this.runJobCommand() : await this.runJobFunction();
+    */
+    await this.runJobCommand(); // string version ONLY
+
+    // await this.lockManager.updateLastrun();
+    // await this.lockManager.unlockJob();
   }
 
   public canRunJob(): boolean {
-    if (this.lockManager.jobLocked() && !this.settings.disableJobLock) {
-      this.noRunReason = "job locked";
-      return false;
-    }
+    // if(this.lockManager.jobLocked() && !this.settings.disableJobLock) {
+    //   this.noRunReason = "job locked"
+    //   return false
+    // }
 
     if (this.app.isMobile && !this.settings.enableMobile) {
       this.noRunReason = "disabled on mobile";
@@ -106,23 +152,23 @@ export default class Job {
     return true;
   }
 
-  public clearJobLock(): void {
-    this.lockManager.clearLock();
-  }
+  // public clearJobLock(): void {
+  //   this.lockManager.clearLock();
+  // }
 
+  /* TODO: better support of jobFunc `|JobFunc`
   private async runJobFunction(): Promise<void> {
-    if (typeof this.job !== "function") {
-      return;
-    }
+    if(typeof this.job !== 'function') { return }
 
     try {
-      await this.job(this.app);
-      console.log(`${this.name} completed`);
+      await this.job(this.app)
+      console.log(`${this.name} completed`)
     } catch (error) {
-      console.log(`${this.name} failed to run`);
-      console.log(error);
+      console.log(`${this.name} failed to run`)
+      console.log(error)
     }
   }
+  */
 
   private async runJobCommand(): Promise<void> {
     // console.log(`running: ${this.job}`)

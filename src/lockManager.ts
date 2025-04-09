@@ -1,3 +1,6 @@
+/*
+TODO: support this again with non-debounced save settings:
+
 import { JobSettings } from "./job";
 import CraitPlugin from "./main";
 import SyncChecker from "./syncChecker";
@@ -69,3 +72,5 @@ export default class CronLockManager {
     return this.plugin.settings.locks[this.job].locked || false;
   }
 }
+*/
+export {};

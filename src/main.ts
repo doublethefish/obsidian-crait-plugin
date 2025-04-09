@@ -1,51 +1,49 @@
-import { Plugin } from "obsidian";
-import Job, { JobFrequency, JobFunc, JobSettings } from "./job";
-import { CronLock } from "./lockManager";
-import CronLockManager from "./lockManager";
+import { debounce, Debouncer, Notice, Plugin } from "obsidian";
+import Job, { CraitJob, JobFrequency, JobSettings } from "./job";
 import CronSettingTab from "./settings";
 import SyncChecker from "./syncChecker";
-import CraitAPI from "./api";
+//import { CronLock } from './lockManager';
+//import CronLockManager from './lockManager';
+// TODO:reintroduce: import CraitAPI from './api';
 
 export interface CraitSettings {
+  resumeTimersOnStartup: boolean;
   runOnStartup: boolean;
   enableMobile: boolean;
+  lastUpdatedMs: number | null; // Timestamp in milliseconds
   watchObsidianSync: boolean;
   jobs: Array<CraitJob>;
-  locks: { [key: string]: CronLock };
-}
-
-export interface CraitJob {
-  id: string;
-  name: string;
-  job: string;
-  frequency: {
-    hours?: number;
-    mins?: number;
-    secs?: number;
-  };
-  settings: JobSettings;
+  // locks: { [key: string]: CronLock };
 }
 
 const DEFAULT_SETTINGS: CraitSettings = {
+  resumeTimersOnStartup: true,
   runOnStartup: true,
   enableMobile: true,
+  lastUpdatedMs: null, // null = not loaded/set
   watchObsidianSync: false,
   jobs: [],
-  locks: {},
+  // locks: {},
 };
 
 export default class CraitPlugin extends Plugin {
   static instance: CraitPlugin;
   settings: CraitSettings;
   syncChecker: SyncChecker;
-  lockManager: CronLockManager;
+  // lockManager: CronLockManager;
   jobs: { [key: string]: Job };
-  api: CraitAPI;
+  saveSettings: Debouncer<[], void>;
+  // TODO:reintroduce: api: api: CraitAPI
 
   /** Called when the plugin is loaded. */
   async onload() {
-    console.log("Loading Inactivity Timers!");
+    console.log("Loading Crait!");
+
+    // set up the save debouncer
+    this.setSaveSettingsDebouncer();
+
     CraitPlugin.instance = this;
+
     await this.loadSettings();
 
     this.addSettingTab(new CronSettingTab(this.app, this));
@@ -55,13 +53,25 @@ export default class CraitPlugin extends Plugin {
 
     // load our cronjobs
     this.loadJobs();
-    this.api = CraitAPI.get(this);
+    // TODO:reintroduce: this.api = CraitAPI.get(this)
     this.app.workspace.onLayoutReady(() => {
       if (this.settings.runOnStartup) {
         if (this.app.isMobile && !this.settings.enableMobile) {
           return;
         }
+        new Notice("Run-on-start-up Focus-Timers!");
         this.runJobs();
+      } else {
+        // We are not auto-magically running the jobs on
+        // startup. Check to see if we want to run them if
+        // the timers have updates since.
+        if (this.settings.resumeTimersOnStartup) {
+          if (this.app.isMobile && !this.settings.enableMobile) {
+            return;
+          }
+          new Notice("Resuming Focus-Timers!");
+          this.runJobsAndResume();
+        }
       }
     });
 
@@ -71,7 +81,7 @@ export default class CraitPlugin extends Plugin {
   }
 
   public async runJobs() {
-    // console.log("Running inactive-timers jobs!")
+    // new Notice("Running Obsidian Cron!")
     for (const [, job] of Object.entries(this.jobs)) {
       await this.syncChecker.waitForSync(job.settings);
 
@@ -79,11 +89,27 @@ export default class CraitPlugin extends Plugin {
       await this.loadSettings();
 
       if (!job.canRunJob()) {
-        // console.log(`Can't run job: ${job.noRunReason}`)
+        // new Notice(`Can't run job: ${job.noRunReason}`)
         continue;
       }
 
       await job.runJob();
+    }
+  }
+
+  private async runJobsAndResume() {
+    for (const [, job] of Object.entries(this.jobs)) {
+      await this.syncChecker.waitForSync(job.settings);
+
+      // reload the settings incase we've had a new lock come in via sync
+      await this.loadSettings();
+
+      if (!job.canRunJob()) {
+        // new Notice(`Can't run job: ${job.noRunReason}`)
+        continue;
+      }
+
+      await job.onLoad(this.settings.lastUpdatedMs);
     }
   }
 
@@ -98,21 +124,21 @@ export default class CraitPlugin extends Plugin {
     name: string,
     frequency: JobFrequency,
     settings: JobSettings,
-    job: JobFunc
+    job: string /*TODO: |JobFunc*/
   ) {
     const existingJob = this.getJob(name);
     if (existingJob) throw new Error("CRAIT job already exists");
 
-    this.jobs[name] = new Job(
-      name,
+    const craitJob: CraitJob = {
+      id: name,
       name,
       job,
       frequency,
       settings,
-      this.app,
-      this,
-      this.syncChecker
-    );
+    };
+
+    this.jobs[name] = new Job(craitJob, this.app, this, this.syncChecker);
+    this.saveSettings();
   }
 
   public async runJob(name: string) {
@@ -121,11 +147,11 @@ export default class CraitPlugin extends Plugin {
     await job.runJob();
   }
 
-  public clearJobLock(name: string) {
-    const job = this.getJob(name);
-    if (!job) throw new Error("CRAIT job doesn't exist");
-    job.clearJobLock();
-  }
+  // public clearJobLock(name: string) {
+  //   const job = this.getJob(name);
+  //   if (!job) throw new Error("CRAIT job doesn't exist");
+  //   job.clearJobLock();
+  // }
 
   public getJob(name: string): Job | null {
     for (const [, job] of Object.entries(this.jobs)) {
@@ -136,7 +162,7 @@ export default class CraitPlugin extends Plugin {
 
   public onunload() {
     if (this.settings.watchObsidianSync) this.syncChecker.handleUnload();
-    // console.log("CRAIT unloaded")
+    // new Notice("CRAIT unloaded")
   }
 
   public loadJobs() {
@@ -155,16 +181,7 @@ export default class CraitPlugin extends Plugin {
         return;
       }
 
-      this.jobs[craitJob.id] = new Job(
-        craitJob.id,
-        craitJob.name,
-        craitJob.job,
-        craitJob.frequency,
-        craitJob.settings,
-        this.app,
-        this,
-        this.syncChecker
-      );
+      this.jobs[craitJob.id] = new Job(craitJob, this.app, this, this.syncChecker);
     });
   }
 
@@ -184,14 +201,27 @@ export default class CraitPlugin extends Plugin {
     for (const [, job] of Object.entries(this.jobs)) {
       job.resetTimeout();
     }
+
+    // reset the timeout in the settings
+    this.settings.lastUpdatedMs = Date.now();
+    this.saveSettings();
   }
 
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
   }
 
-  async saveSettings() {
-    await this.saveData(this.settings);
-    this.resetTimeout();
+  private setSaveSettingsDebouncer(): void {
+    this.saveSettings?.cancel();
+    this.saveSettings = debounce(
+      () => {
+        new Notice("Focus timers: Saving settings");
+        this.saveData(this.settings).then(() => {
+          this.resetTimeout();
+        });
+      },
+      60 * 1000,
+      true
+    );
   }
 }
