@@ -1,4 +1,4 @@
-import { Plugin } from "obsidian";
+import { Notice, Plugin } from "obsidian";
 import Job, { CraitJob, JobFrequency, JobSettings } from "./job";
 import { CronLock } from "./lockManager";
 import CronLockManager from "./lockManager";
@@ -53,6 +53,7 @@ export default class CraitPlugin extends Plugin {
         if (this.app.isMobile && !this.settings.enableMobile) {
           return;
         }
+        new Notice("Run-on-start-up Focus-Timers!");
         this.runJobs();
       } else {
         // We are not auto-magically running the jobs on
@@ -62,6 +63,7 @@ export default class CraitPlugin extends Plugin {
           if (this.app.isMobile && !this.settings.enableMobile) {
             return;
           }
+          new Notice("Resuming Focus-Timers!");
           this.runJobsAndResume();
         }
       }
@@ -73,7 +75,7 @@ export default class CraitPlugin extends Plugin {
   }
 
   public async runJobs() {
-    // console.log("Running inactive-timers jobs!")
+    // new Notice("Running Obsidian Cron!")
     for (const [, job] of Object.entries(this.jobs)) {
       await this.syncChecker.waitForSync(job.settings);
 
@@ -81,7 +83,7 @@ export default class CraitPlugin extends Plugin {
       await this.loadSettings();
 
       if (!job.canRunJob()) {
-        // console.log(`Can't run job: ${job.noRunReason}`)
+        // new Notice(`Can't run job: ${job.noRunReason}`)
         continue;
       }
 
@@ -97,7 +99,7 @@ export default class CraitPlugin extends Plugin {
       await this.loadSettings();
 
       if (!job.canRunJob()) {
-        // console.log(`Can't run job: ${job.noRunReason}`)
+        // new Notice(`Can't run job: ${job.noRunReason}`)
         continue;
       }
 
@@ -130,6 +132,7 @@ export default class CraitPlugin extends Plugin {
     };
 
     this.jobs[name] = new Job(craitJob, this.app, this, this.syncChecker);
+    this.saveSettings();
   }
 
   public async runJob(name: string) {
@@ -153,7 +156,7 @@ export default class CraitPlugin extends Plugin {
 
   public onunload() {
     if (this.settings.watchObsidianSync) this.syncChecker.handleUnload();
-    // console.log("CRAIT unloaded")
+    // new Notice("CRAIT unloaded")
   }
 
   public loadJobs() {
@@ -203,6 +206,7 @@ export default class CraitPlugin extends Plugin {
   }
 
   async saveSettings() {
+    new Notice("Focus timers: Saving settings");
     // TODO: do NOT spam settings
     await this.saveData(this.settings);
     this.resetTimeout();

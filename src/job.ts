@@ -1,4 +1,4 @@
-import { App } from "obsidian";
+import { App, Notice } from "obsidian";
 import CronLockManager from "./lockManager";
 import CraitPlugin from "./main";
 import SyncChecker from "./syncChecker";
@@ -124,7 +124,7 @@ export default class Job {
   }
 
   public async runJob(): Promise<void> {
-    console.log(`Running ${this.name}`);
+    new Notice(`Focus timers: Running ${this.name}`);
 
     await this.lockManager.lockJob();
 
