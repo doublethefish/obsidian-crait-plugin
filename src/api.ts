@@ -1,4 +1,3 @@
-import { JobFrequency, JobFunc, JobSettings } from "./job";
 import CraitPlugin from "./main";
 
 export default class CraitAPI {
@@ -6,14 +5,14 @@ export default class CraitAPI {
 
   public static get(plugin: CraitPlugin) {
     return {
-      addJob(
-        name: string,
-        frequency: JobFrequency,
-        settings: JobSettings,
-        job: JobFunc
-      ) {
-        return plugin.addJob(name, frequency, settings, job);
-      },
+      // TODO: reintroduce: addJob(
+      // TODO: reintroduce:   name: string,
+      // TODO: reintroduce:   frequency: JobFrequency,
+      // TODO: reintroduce:   settings: JobSettings,
+      // TODO: reintroduce:   job: JobFunc
+      // TODO: reintroduce: ) {
+      // TODO: reintroduce:   return plugin.addJob(name, frequency, settings, job);
+      // TODO: reintroduce: },
       runJob(name: string) {
         return plugin.runJob(name);
       },

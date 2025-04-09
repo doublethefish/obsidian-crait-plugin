@@ -1,10 +1,10 @@
 import { Plugin } from "obsidian";
-import Job, { JobFrequency, JobFunc, JobSettings } from "./job";
+import Job, { CraitJob, JobFrequency, JobSettings } from "./job";
 import { CronLock } from "./lockManager";
 import CronLockManager from "./lockManager";
 import CronSettingTab from "./settings";
 import SyncChecker from "./syncChecker";
-import CraitAPI from "./api";
+// TODO:reintroduce: import CraitAPI from './api';
 
 export interface CraitSettings {
   runOnStartup: boolean;
@@ -12,18 +12,6 @@ export interface CraitSettings {
   watchObsidianSync: boolean;
   jobs: Array<CraitJob>;
   locks: { [key: string]: CronLock };
-}
-
-export interface CraitJob {
-  id: string;
-  name: string;
-  job: string;
-  frequency: {
-    hours?: number;
-    mins?: number;
-    secs?: number;
-  };
-  settings: JobSettings;
 }
 
 const DEFAULT_SETTINGS: CraitSettings = {
@@ -40,7 +28,7 @@ export default class CraitPlugin extends Plugin {
   syncChecker: SyncChecker;
   lockManager: CronLockManager;
   jobs: { [key: string]: Job };
-  api: CraitAPI;
+  // TODO:reintroduce: api: api: CraitAPI
 
   /** Called when the plugin is loaded. */
   async onload() {
@@ -55,7 +43,7 @@ export default class CraitPlugin extends Plugin {
 
     // load our cronjobs
     this.loadJobs();
-    this.api = CraitAPI.get(this);
+    // TODO:reintroduce: this.api = CraitAPI.get(this)
     this.app.workspace.onLayoutReady(() => {
       if (this.settings.runOnStartup) {
         if (this.app.isMobile && !this.settings.enableMobile) {
@@ -98,21 +86,20 @@ export default class CraitPlugin extends Plugin {
     name: string,
     frequency: JobFrequency,
     settings: JobSettings,
-    job: JobFunc
+    job: string /*TODO: |JobFunc*/
   ) {
     const existingJob = this.getJob(name);
     if (existingJob) throw new Error("CRAIT job already exists");
 
-    this.jobs[name] = new Job(
-      name,
+    const craitJob: CraitJob = {
+      id: name,
       name,
       job,
       frequency,
       settings,
-      this.app,
-      this,
-      this.syncChecker
-    );
+    };
+
+    this.jobs[name] = new Job(craitJob, this.app, this, this.syncChecker);
   }
 
   public async runJob(name: string) {
@@ -155,16 +142,7 @@ export default class CraitPlugin extends Plugin {
         return;
       }
 
-      this.jobs[craitJob.id] = new Job(
-        craitJob.id,
-        craitJob.name,
-        craitJob.job,
-        craitJob.frequency,
-        craitJob.settings,
-        this.app,
-        this,
-        this.syncChecker
-      );
+      this.jobs[craitJob.id] = new Job(craitJob, this.app, this, this.syncChecker);
     });
   }
 

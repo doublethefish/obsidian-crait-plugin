@@ -19,6 +19,18 @@ export interface JobSettings {
   disableJobLock?: boolean;
 }
 
+export interface CraitJob {
+  id: string;
+  name: string;
+  job: string; // TODO: better support of jobFunc `|JobFunc`
+  frequency: {
+    hours?: number;
+    mins?: number;
+    secs?: number;
+  };
+  settings: JobSettings;
+}
+
 export default class Job {
   syncChecker: SyncChecker;
   plugin: CraitPlugin;
@@ -26,7 +38,7 @@ export default class Job {
 
   lockManager: CronLockManager;
   settings: JobSettings;
-  job: JobFunc | string;
+  job: string; // TODO: better support of jobFunc `|JobFunc`
   name: string;
   id: string;
   noRunReason: string;
@@ -34,15 +46,24 @@ export default class Job {
   timeoutId: number;
 
   public constructor(
-    id: string,
-    name: string,
-    job: JobFunc | string,
-    frequency: JobFrequency,
-    settings: JobSettings,
+    craitJob: CraitJob,
     app: App,
     plugin: CraitPlugin,
     syncChecker: SyncChecker
   ) {
+    const {
+      id,
+      name,
+      job,
+      frequency,
+      settings,
+    }: {
+      id: string;
+      name: string;
+      job: string;
+      frequency: JobFrequency;
+      settings: JobSettings;
+    } = craitJob;
     this.syncChecker = syncChecker;
     this.plugin = plugin;
     this.app = app;
@@ -84,9 +105,10 @@ export default class Job {
 
     await this.lockManager.lockJob();
 
-    typeof this.job == "string"
-      ? await this.runJobCommand()
-      : await this.runJobFunction();
+    /* TODO: better support of jobFunc `|JobFunc`
+    typeof this.job == "string" ? await this.runJobCommand() : await this.runJobFunction();
+    */
+    await this.runJobCommand(); // string version ONLY
 
     await this.lockManager.updateLastrun();
     await this.lockManager.unlockJob();
@@ -110,19 +132,19 @@ export default class Job {
     this.lockManager.clearLock();
   }
 
+  /* TODO: better support of jobFunc `|JobFunc`
   private async runJobFunction(): Promise<void> {
-    if (typeof this.job !== "function") {
-      return;
-    }
+    if(typeof this.job !== 'function') { return }
 
     try {
-      await this.job(this.app);
-      console.log(`${this.name} completed`);
+      await this.job(this.app)
+      console.log(`${this.name} completed`)
     } catch (error) {
-      console.log(`${this.name} failed to run`);
-      console.log(error);
+      console.log(`${this.name} failed to run`)
+      console.log(error)
     }
   }
+  */
 
   private async runJobCommand(): Promise<void> {
     // console.log(`running: ${this.job}`)
