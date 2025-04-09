@@ -7,16 +7,20 @@ import SyncChecker from "./syncChecker";
 // TODO:reintroduce: import CraitAPI from './api';
 
 export interface CraitSettings {
+  resumeTimersOnStartup: boolean;
   runOnStartup: boolean;
   enableMobile: boolean;
+  lastUpdatedMs: number | null; // Timestamp in milliseconds
   watchObsidianSync: boolean;
   jobs: Array<CraitJob>;
   locks: { [key: string]: CronLock };
 }
 
 const DEFAULT_SETTINGS: CraitSettings = {
+  resumeTimersOnStartup: true,
   runOnStartup: true,
   enableMobile: true,
+  lastUpdatedMs: null, // null = not loaded/set
   watchObsidianSync: false,
   jobs: [],
   locks: {},
@@ -50,6 +54,16 @@ export default class CraitPlugin extends Plugin {
           return;
         }
         this.runJobs();
+      } else {
+        // We are not auto-magically running the jobs on
+        // startup. Check to see if we want to run them if
+        // the timers have updates since.
+        if (this.settings.resumeTimersOnStartup) {
+          if (this.app.isMobile && !this.settings.enableMobile) {
+            return;
+          }
+          this.runJobsAndResume();
+        }
       }
     });
 
@@ -72,6 +86,22 @@ export default class CraitPlugin extends Plugin {
       }
 
       await job.runJob();
+    }
+  }
+
+  private async runJobsAndResume() {
+    for (const [, job] of Object.entries(this.jobs)) {
+      await this.syncChecker.waitForSync(job.settings);
+
+      // reload the settings incase we've had a new lock come in via sync
+      await this.loadSettings();
+
+      if (!job.canRunJob()) {
+        // console.log(`Can't run job: ${job.noRunReason}`)
+        continue;
+      }
+
+      await job.onLoad(this.settings.lastUpdatedMs);
     }
   }
 
@@ -162,6 +192,10 @@ export default class CraitPlugin extends Plugin {
     for (const [, job] of Object.entries(this.jobs)) {
       job.resetTimeout();
     }
+
+    // reset the timeout in the settings
+    this.settings.lastUpdatedMs = Date.now();
+    this.saveSettings();
   }
 
   async loadSettings() {
@@ -169,6 +203,7 @@ export default class CraitPlugin extends Plugin {
   }
 
   async saveSettings() {
+    // TODO: do NOT spam settings
     await this.saveData(this.settings);
     this.resetTimeout();
   }

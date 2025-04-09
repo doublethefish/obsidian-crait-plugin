@@ -81,6 +81,29 @@ export default class Job {
     clearTimeout(this.timeoutId);
   }
 
+  /** Called when Obsidian is restarted.
+   *   We check for delta on timer and run the commands if the time has been exceded
+   **/
+  public onLoad(lastUpdatedMs: number | null) {
+    if (lastUpdatedMs == null) {
+      return;
+    }
+
+    const thresholdMs: number =
+      ((this.frequency.hours || 0) * 3600 +
+        (this.frequency.mins || 0) * 60 +
+        (this.frequency.secs || 0)) *
+      1000;
+
+    // Get current time in milliseconds
+    const nowMs = Date.now();
+
+    // Check if more than the delta time has elapsed since lastUpdatedMs
+    if (nowMs - lastUpdatedMs > thresholdMs) {
+      this.runJob();
+    }
+  }
+
   /** Resets the timout for this job. */
   public resetTimeout() {
     // console.log(`Resetting timeout ${this.name}`);
